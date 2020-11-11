@@ -28,7 +28,7 @@ else
 fi
 
 if [ -n "${RUNNER_LABELS}" ]; then
-  LABEL_ARG="--labels ${RUNNER_LABELS}"
+  LABEL_ARG="${RUNNER_LABELS}"
 fi
 
 if [ -z "${RUNNER_TOKEN}" ]; then
@@ -37,7 +37,7 @@ if [ -z "${RUNNER_TOKEN}" ]; then
 fi
 
 cd /runner
-./config.sh --unattended --replace --name "${RUNNER_NAME}" --url "${GITHUB_URL}${ATTACH}" --token "${RUNNER_TOKEN}" ${LABEL_ARG}
+./config.sh --unattended --replace --name "${RUNNER_NAME}" --url "${GITHUB_URL}${ATTACH}" --token "${RUNNER_TOKEN}" --labels "${LABEL_ARG}"
 
 for f in runsvc.sh RunnerService.js; do
   diff {bin,patched}/${f} || :

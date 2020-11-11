@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -50,7 +51,12 @@ func (c *Config) NewClient() (*Client, error) {
 			return nil, fmt.Errorf("authentication failed: %v", err)
 		}
 		if len(c.EnterpriseURL) > 0 {
-			tr.BaseURL = c.EnterpriseURL
+			githubAPIURL, err := getEnterpriseApiUrl(c.EnterpriseURL)
+			if err != nil {
+				c.Log.Error(err, "Enterprise URL incorrect")
+				return nil, fmt.Errorf("enterprise url incorrect: %v", err)
+			}
+			tr.BaseURL = githubAPIURL
 		}
 		httpClient = &http.Client{Transport: tr}
 	}
@@ -224,4 +230,20 @@ func splitOwnerAndRepo(repo string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid repository name: '%s'", repo)
 	}
 	return chunk[0], chunk[1], nil
+}
+
+func getEnterpriseApiUrl(baseURL string) (string, error) {
+	baseEndpoint, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(baseEndpoint.Path, "/") {
+		baseEndpoint.Path += "/"
+	}
+	if !strings.HasSuffix(baseEndpoint.Path, "/api/v3") &&
+		!strings.HasPrefix(baseEndpoint.Host, "api.") &&
+		!strings.Contains(baseEndpoint.Host, ".api.") {
+		baseEndpoint.Path += "api/v3"
+	}
+	return fmt.Sprintf("%s://%s%s", baseEndpoint.Scheme, baseEndpoint.Host, baseEndpoint.Path), nil
 }
